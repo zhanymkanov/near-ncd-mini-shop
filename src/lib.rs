@@ -114,6 +114,14 @@ impl Shop {
             .collect()
     }
 
+    pub fn get_product_price(&self, product: u8) -> U128 {
+        if !self.product_prices.contains_key(&product) {
+            env::panic(b"Product not found")
+        }
+
+        self.product_prices.get(&product).unwrap()
+    }
+
     fn deliver_product(&mut self, product: &u8, buyer_id: &AccountId) {
         let in_stock = self.stock.get(product).unwrap();
         self.stock.insert(product, &(in_stock - 1));
@@ -233,5 +241,21 @@ mod tests {
         testing_env!(context);
 
         Shop::new().set_product_availability(0, 10);
+    }
+    #[test]
+    fn test_get_product_price() {
+        let context = get_context(0, false, "buyer.testnet");
+        testing_env!(context);
+
+        let resp = Shop::new().get_product_price(0);
+        assert_eq!(resp, U128(ONE_NEAR))
+    }
+    #[test]
+    #[should_panic(expected = "Product not found")]
+    fn test_get_product_price_not_found() {
+        let context = get_context(0, false, "buyer.testnet");
+        testing_env!(context);
+
+        Shop::new().get_product_price(255);
     }
 }
