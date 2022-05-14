@@ -1,14 +1,14 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LookupMap, Vector, UnorderedMap};
-use near_sdk::json_types::{U128};
+use near_sdk::collections::{LookupMap, UnorderedMap, Vector};
+use near_sdk::json_types::U128;
 use near_sdk::{env, near_bindgen, AccountId, PanicOnDefault};
 
 near_sdk::setup_alloc!();
 
-const ONE_NEAR: u128 = 1_000_000_000_000_000_000_000_000;  // 1 near as yoctoNEAR
+const ONE_NEAR: u128 = 1_000_000_000_000_000_000_000_000; // 1 near as yoctoNEAR
 
 #[derive(BorshDeserialize, BorshSerialize, Debug)]
-pub enum ShopProduct{
+pub enum ShopProduct {
     SmallSnack,
     LargeSnack,
     Soda,
@@ -17,16 +17,15 @@ pub enum ShopProduct{
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
-pub struct Shop{
-    catalog: UnorderedMap<u8, ShopProduct>,  // Product ID and Name
-    stock: UnorderedMap<u8, u8>,  // Product ID and Amount in stock
+pub struct Shop {
+    catalog: UnorderedMap<u8, ShopProduct>, // Product ID and Name
+    stock: UnorderedMap<u8, u8>,            // Product ID and Amount in stock
     product_prices: LookupMap<u8, U128>,
-    purchase_history: Vector<String>
+    purchase_history: Vector<String>,
 }
 
 #[near_bindgen]
 impl Shop {
-    
     #[init]
     pub fn new() -> Self {
         assert!(!env::state_exists(), "The contract is already initialized");
@@ -69,7 +68,7 @@ impl Shop {
         }
         let product_price: U128 = match self.product_prices.get(&product) {
             Some(price) => price,
-            None => env::panic(b"Product price not found")
+            None => env::panic(b"Product price not found"),
         };
         let product_price: u128 = product_price.into();
 
@@ -85,8 +84,7 @@ impl Shop {
 
         if env::attached_deposit() > product_price {
             "Thank you for tips!"
-        }
-        else {
+        } else {
             "Thank you for purchase"
         }
     }
@@ -129,20 +127,19 @@ impl Shop {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use near_sdk::test_utils::get_logs;
     use near_sdk::MockedBlockchain;
     use near_sdk::{testing_env, VMContext};
-    use near_sdk::test_utils::get_logs;
 
     fn get_context(attached_deposit: u128, is_view: bool, signer_account_id: &str) -> VMContext {
         VMContext {
             current_account_id: "shop.testnet".to_string(),
-            signer_account_id: signer_account_id.to_string(),  // initial caller of the contract
+            signer_account_id: signer_account_id.to_string(), // initial caller of the contract
             signer_account_pk: vec![0, 1, 2],
-            predecessor_account_id: signer_account_id.to_string(),  // last caller of the contract
+            predecessor_account_id: signer_account_id.to_string(), // last caller of the contract
             input: vec![],
             block_index: 0,
             block_timestamp: 0,
@@ -152,7 +149,7 @@ mod tests {
             attached_deposit,
             prepaid_gas: 10u64.pow(18),
             random_seed: vec![0, 1, 2],
-            is_view,  // true if write operation (chargeable), false if read operation (free)
+            is_view, // true if write operation (chargeable), false if read operation (free)
             output_data_receivers: vec![],
             epoch_height: 19,
         }
@@ -175,7 +172,7 @@ mod tests {
     fn test_purchase_with_tips_success() {
         let context = get_context(2u128 * ONE_NEAR, false, "buyer.testnet");
         testing_env!(context);
-    
+
         let mut contract = Shop::new();
         let resp = contract.buy(0);
 
@@ -183,7 +180,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected="Product not found")]
+    #[should_panic(expected = "Product not found")]
     fn test_product_not_found() {
         let context = get_context(2u128 * ONE_NEAR, false, "buyer.testnet");
         testing_env!(context);
@@ -192,7 +189,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected="Product out of stock")]
+    #[should_panic(expected = "Product out of stock")]
     fn test_product_out_of_stock() {
         let context = get_context(2u128 * ONE_NEAR, false, "buyer.testnet");
         testing_env!(context);
@@ -203,10 +200,10 @@ mod tests {
     fn test_view_catalog() {
         let context = get_context(0, false, "buyer.testnet");
         testing_env!(context);
-    
+
         let contract = Shop::new();
         let resp = contract.view_catalog(0, 10);
-    
+
         println!("{:?}", &resp);
         assert_eq!(resp.is_empty(), false)
     }
@@ -214,10 +211,10 @@ mod tests {
     fn test_view_stock() {
         let context = get_context(0, false, "buyer.testnet");
         testing_env!(context);
-    
+
         let contract = Shop::new();
         let resp = contract.view_stock(0, 10);
-    
+
         println!("{:?}", &resp);
         assert_eq!(resp.is_empty(), false)
     }
@@ -230,7 +227,7 @@ mod tests {
         assert_eq!(resp, (0, 10))
     }
     #[test]
-    #[should_panic(expected="Only owner can set products availability")]
+    #[should_panic(expected = "Only owner can set products availability")]
     fn test_set_availability_no_access() {
         let context = get_context(0, false, "buyer.testnet");
         testing_env!(context);
