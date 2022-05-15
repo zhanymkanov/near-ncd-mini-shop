@@ -1,8 +1,8 @@
 ## About
-Smart contract represents a vending machine like shop, where customer can buy products from catalog. 
+Smart contract represents a vending machine, where customer can buy products from catalog. 
 - Customer inputs the product id and attaches required deposit. 
     - Money is not returnable, so check if attachment is enough to buy it. 
-      If it exceeds the product price, it's kept as tips.
+    - If attached deposit exceeds the product price, it's kept as tips.
 - Only the owner of the shop (shop itself) can change the number of available products in the stock.
 
 ## Available methods
