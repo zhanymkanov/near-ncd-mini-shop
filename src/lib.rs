@@ -1,13 +1,15 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedMap, Vector};
 use near_sdk::json_types::U128;
+use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{env, near_bindgen, AccountId, PanicOnDefault};
 
 near_sdk::setup_alloc!();
 
 const ONE_NEAR: u128 = 1_000_000_000_000_000_000_000_000; // 1 near as yoctoNEAR
 
-#[derive(BorshDeserialize, BorshSerialize, Debug)]
+#[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Debug)]
+#[serde(crate = "near_sdk::serde")]
 pub enum ShopProduct {
     SmallSnack,
     LargeSnack,
