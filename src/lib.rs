@@ -17,6 +17,13 @@ pub enum ShopProduct {
     IceCream,
 }
 
+const PRODUCTS: [ShopProduct; 4] = [
+    ShopProduct::SmallSnack,
+    ShopProduct::LargeSnack,
+    ShopProduct::IceCream,
+    ShopProduct::Soda,
+];
+
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Shop {
@@ -32,32 +39,16 @@ impl Shop {
     pub fn new() -> Self {
         assert!(!env::state_exists(), "The contract is already initialized");
 
-        let mut catalog: UnorderedMap<u8, ShopProduct> = UnorderedMap::new(b"c".to_vec());
-        catalog.insert(&0, &ShopProduct::SmallSnack);
-        catalog.insert(&1, &ShopProduct::LargeSnack);
-        catalog.insert(&2, &ShopProduct::Soda);
-        catalog.insert(&3, &ShopProduct::IceCream);
+        let mut shop = Self {
+            catalog: UnorderedMap::new(b"c".to_vec()),
+            stock: UnorderedMap::new(b"s".to_vec()),
+            product_prices: LookupMap::new(b"p".to_vec()),
+            purchase_history: Vector::new(b"v".to_vec()),
+        };
 
-        let mut stock: UnorderedMap<u8, u8> = UnorderedMap::new(b"s".to_vec());
-        stock.insert(&0, &200);
-        stock.insert(&1, &150);
-        stock.insert(&2, &150);
-        stock.insert(&3, &0);
+        shop.init_products();
 
-        let mut product_prices: LookupMap<u8, U128> = LookupMap::new(b"p".to_vec());
-        product_prices.insert(&0, &U128(ONE_NEAR));
-        product_prices.insert(&1, &U128(2 * ONE_NEAR));
-        product_prices.insert(&2, &U128(3 * ONE_NEAR));
-        product_prices.insert(&3, &U128(2 * ONE_NEAR));
-
-        let purchase_history: Vector<String> = Vector::new(b"v".to_vec());
-
-        Self {
-            catalog,
-            stock,
-            product_prices,
-            purchase_history,
-        }
+        shop
     }
 
     #[payable]
@@ -101,19 +92,11 @@ impl Shop {
     }
 
     pub fn view_catalog(&self, from_index: u64, limit: u64) -> Vec<(u8, ShopProduct)> {
-        let keys = self.catalog.keys_as_vector();
-        let values = self.catalog.values_as_vector();
-        (from_index..std::cmp::min(from_index + limit, self.catalog.len()))
-            .map(|index| (keys.get(index).unwrap(), values.get(index).unwrap()))
-            .collect()
+        self.map_to_vec(&self.catalog, from_index, limit)
     }
 
     pub fn view_stock(&self, from_index: u64, limit: u64) -> Vec<(u8, u8)> {
-        let keys = self.stock.keys_as_vector();
-        let values = self.stock.values_as_vector();
-        (from_index..std::cmp::min(from_index + limit, self.stock.len()))
-            .map(|index| (keys.get(index).unwrap(), values.get(index).unwrap()))
-            .collect()
+        self.map_to_vec(&self.stock, from_index, limit)
     }
 
     pub fn get_product_price(&self, product: u8) -> U128 {
@@ -134,6 +117,52 @@ impl Shop {
         let account_action = String::from(format!("{}:{}", env::predecessor_account_id(), product));
         self.purchase_history.push(&account_action);
         env::log("Saved account purchase".as_bytes())
+    }
+
+    fn map_to_vec<K: BorshSerialize + BorshDeserialize, V: BorshSerialize + BorshDeserialize>(
+        &self,
+        map: &UnorderedMap<K, V>,
+        from_index: u64,
+        limit: u64,
+    ) -> Vec<(K, V)> {
+        let keys = map.keys_as_vector();
+        let values = map.values_as_vector();
+        (from_index..std::cmp::min(from_index + limit, self.stock.len()))
+            .map(|index| (keys.get(index).unwrap(), values.get(index).unwrap()))
+            .collect()
+    }
+
+    fn init_products(&mut self) {
+        self.init_catalog();
+        self.init_stock();
+        self.init_product_prices();
+    }
+
+    fn init_catalog(&mut self) {
+        if !self.catalog.is_empty() {
+            env::panic(b"Catalog is already initialized")
+        }
+
+        for (idx, product) in PRODUCTS.iter().enumerate() {
+            self.catalog.insert(&(idx as u8), &product);
+        }
+    }
+
+    fn init_stock(&mut self) {
+        if !self.stock.is_empty() {
+            env::panic(b"Catalog is already initialized")
+        }
+        let product_availability = [200, 150, 150, 0];
+        for (idx, amount) in product_availability.iter().enumerate() {
+            self.stock.insert(&(idx as u8), &amount);
+        }
+    }
+
+    fn init_product_prices(&mut self) {
+        let product_prices = [ONE_NEAR, 2 * ONE_NEAR, 3 * ONE_NEAR, 2 * ONE_NEAR];
+        for (idx, price) in product_prices.iter().enumerate() {
+            self.product_prices.insert(&(idx as u8), &U128(*price));
+        }
     }
 }
 
