@@ -17,13 +17,6 @@ pub enum ShopProduct {
     IceCream,
 }
 
-const PRODUCTS: [ShopProduct; 4] = [
-    ShopProduct::SmallSnack,
-    ShopProduct::LargeSnack,
-    ShopProduct::IceCream,
-    ShopProduct::Soda,
-];
-
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Shop {
@@ -142,8 +135,14 @@ impl Shop {
         if !self.catalog.is_empty() {
             env::panic(b"Catalog is already initialized")
         }
+        let products = [
+            ShopProduct::SmallSnack,
+            ShopProduct::LargeSnack,
+            ShopProduct::IceCream,
+            ShopProduct::Soda,
+        ];
 
-        for (idx, product) in PRODUCTS.iter().enumerate() {
+        for (idx, product) in products.iter().enumerate() {
             self.catalog.insert(&(idx as u8), &product);
         }
     }
